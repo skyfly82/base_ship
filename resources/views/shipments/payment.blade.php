@@ -1,9 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-    <h2>Płatność za nadanie paczki</h2>
-    <form method="POST" action="{{ route('shipments.pay', $shipment) }}">
+<div class="container text-center">
+    <h2>Płatność za przesyłkę</h2>
+    <p>Tu pojawi się integracja z płatnościami (np. Przelewy24, Stripe itd.).</p>
+    <form method="POST" action="{{ route('shipments.payment.confirm', $shipment->id) }}">
         @csrf
-        <button type="submit">Opłaciłem – nadaj paczkę</button>
+        <button type="submit" class="btn btn-success btn-lg">Symuluj "opłaciłem"</button>
     </form>
+    <br>
+    <a href="{{ route('shipments.index') }}" class="btn btn-secondary mt-3">Powrót do listy przesyłek</a>
+</div>
 @endsection
