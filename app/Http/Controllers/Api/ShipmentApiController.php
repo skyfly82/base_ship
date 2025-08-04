@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use League\Csv\Reader;
 use League\Csv\Writer;
+use App\Services\InPostService; // dodaj import serwisu!
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ShipmentApiController extends Controller
@@ -27,7 +28,7 @@ class ShipmentApiController extends Controller
     }
 
     // POST /api/shipments
-    public function store(Request $request)
+    public function store(Request $request, InPostService $inpost)
     {
         $data = $request->validate([
             'customer_id' => 'required|integer',
@@ -42,9 +43,46 @@ class ShipmentApiController extends Controller
         ]);
         $data['status'] = 'created';
 
+        // 1. Wywołanie API InPost i pobranie danych przesyłki
+        // Musisz zamapować dane do payloadu oczekiwanego przez InPost (dostosuj do swojego przypadku)
+        $inpostPayload = [
+            'receiver' => [
+                // Przykład: uzupełnij danymi odbiorcy z $request!
+                'email' => $request->input('receiver_email', 'test@example.com'),
+                'phone' => $request->input('receiver_phone', '500600700'),
+                'name'  => $request->input('receiver_name', 'Jan Kowalski'),
+            ],
+            'parcels' => [
+                [
+                    'dimensions' => [
+                        'length' => (float) $data['length_cm'],
+                        'width'  => (float) $data['width_cm'],
+                        'height' => (float) $data['height_cm'],
+                    ],
+                    'weight' => (float) $data['weight_kg'],
+                ]
+            ],
+            // Pamiętaj: type/target_point / service
+            'service' => 'inpost_locker_standard',
+            'custom_attributes' => [
+                // opcjonalnie własne atrybuty
+            ],
+        ];
+
+        // Uwaga: minimalny payload dla testów! Sprawdź wymagania w dokumentacji ShipX.
+
+        $inpostResponse = $inpost->createShipment($inpostPayload);
+
+        // 2. Zapisz dane w bazie — np. tracking_number i status z odpowiedzi InPost
+        $data['tracking_number'] = $inpostResponse['tracking_number'] ?? null;
+        $data['details'] = json_encode(['inpost' => $inpostResponse]);
         $shipment = Shipment::create($data);
 
-        return response()->json($shipment, 201);
+        return response()->json([
+            'message' => 'Shipment created and sent to InPost',
+            'shipment' => $shipment,
+            'inpost' => $inpostResponse
+        ], 201);
     }
 
     // PUT/PATCH /api/shipments/{shipment}
@@ -71,12 +109,13 @@ class ShipmentApiController extends Controller
     // PATCH /api/shipments/{shipment}/cancel
     public function cancel(Request $request, Shipment $shipment)
     {
-        // Możesz dodać logikę: czy anulacja możliwa, np. nie wysłano do kuriera itp.
         if ($shipment->status !== 'created') {
             return response()->json(['error' => 'Shipment cannot be cancelled at this stage.'], 409);
         }
 
-        // Wywołanie API kuriera (opcjonalnie)
+        // Tu możesz dodać anulację po stronie InPost (InPost nie zawsze pozwala!)
+        // Przykład:
+        // $inpost->cancelShipment($shipment->tracking_number);
 
         $shipment->status = 'cancelled';
         $shipment->save();
@@ -88,16 +127,22 @@ class ShipmentApiController extends Controller
     }
 
     // GET /api/shipments/{shipment}/label
-    public function label(Shipment $shipment)
+    public function label(Shipment $shipment, InPostService $inpost)
     {
-        // Możesz tu wygenerować labelkę PDF (albo zwrócić wcześniej pobraną z API kuriera)
-        // Przykład zwrócenia pliku PDF, który jest na dysku lokalnym:
         $labelPath = "labels/{$shipment->id}.pdf";
 
         if (!Storage::disk('local')->exists($labelPath)) {
-            // Wywołanie do API kuriera, pobranie i zapisanie etykiety
-            // Storage::disk('local')->put($labelPath, $labelPdfContent);
-            return response()->json(['error' => 'Label not found'], 404);
+            // Pobierz label z InPost jeśli jeszcze nie ma
+            if (!$shipment->tracking_number) {
+                return response()->json(['error' => 'No tracking number!'], 404);
+            }
+
+            try {
+                $pdfContent = $inpost->getLabel($shipment->tracking_number, 'A6');
+                Storage::disk('local')->put($labelPath, $pdfContent);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Cannot fetch label: ' . $e->getMessage()], 500);
+            }
         }
 
         return response()->download(storage_path("app/{$labelPath}"), "label-{$shipment->id}.pdf");
@@ -152,7 +197,6 @@ class ShipmentApiController extends Controller
 
         $imported = 0;
         foreach ($csv->getRecords() as $record) {
-            // Możesz zrobić walidację i mapowanie pól
             try {
                 Shipment::create([
                     'customer_id' => $record['customer_id'] ?? null,
@@ -168,7 +212,6 @@ class ShipmentApiController extends Controller
                 ]);
                 $imported++;
             } catch (\Throwable $e) {
-                // Możesz logować błędy walidacji itp.
                 continue;
             }
         }

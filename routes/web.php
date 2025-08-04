@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ShipmentController;
+use App\Services\InPostService;
 
 Route::get('/', function () {
     return view('welcome');
@@ -24,5 +25,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
     Route::get('/shipments/{id}', [ShipmentController::class, 'show'])->name('shipments.show');
 });
+
+// ========================================
+//      TESTOWY ENDPOINT INPOST SANDBOX
+// ========================================
+Route::get('/test-inpost-points', function (InPostService $inPost) {
+    try {
+        // Pobierz pierwsze 20 paczkomatów z sandboxa (tylko do testów!)
+        $points = $inPost->getPoints('parcel_locker');
+        return response()->json(array_slice($points, 0, 20));
+    } catch (\Throwable $e) {
+        return response(['error' => $e->getMessage()], 500);
+    }
+});
+// UWAGA: Po testach usuń ten endpoint!
 
 require __DIR__.'/auth.php';

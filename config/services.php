@@ -13,7 +13,10 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
-
+    'inpost' => [
+        'api_url' => env('INPOST_API_URL'),
+        'token' => env('INPOST_API_TOKEN'),
+    ],
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
