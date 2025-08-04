@@ -1,28 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h1>Twoje przesyłki</h1>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th><th>Status</th><th>Tracking</th><th>Waga</th><th>Data</th><th>Akcja</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($shipments as $shipment)
-            <tr>
-                <td>{{ $shipment->id }}</td>
-                <td>{{ $shipment->status }}</td>
-                <td>{{ $shipment->tracking_number }}</td>
-                <td>{{ $shipment->billing_weight_kg ?? $shipment->weight_kg }} kg</td>
-                <td>{{ $shipment->created_at }}</td>
-                <td>
-                    <a href="{{ route('shipments.show', $shipment->id) }}" class="btn btn-primary btn-sm">Szczegóły</a>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
+    <h2>Twoje przesyłki</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Tracking</th>
+            <th>Etykieta</th>
+        </tr>
+        @foreach($shipments as $s)
+        <tr>
+            <td>{{ $s->id }}</td>
+            <td>{{ $s->status }}</td>
+            <td>{{ $s->tracking_number }}</td>
+            <td>
+                @if($s->status === 'created')
+                    <a href="{{ route('shipments.label', $s) }}" target="_blank">Pobierz PDF</a>
+                @else
+                    -
+                @endif
+            </td>
+        </tr>
+        @endforeach
     </table>
-</div>
 @endsection
