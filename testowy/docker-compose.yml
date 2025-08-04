@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    image: laravelsail/php83-composer
+    container_name: test_app
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "8090:80"
+    working_dir: /var/www/html

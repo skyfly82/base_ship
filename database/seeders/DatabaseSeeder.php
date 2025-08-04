@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CustomerAndSettlementSeeder::class,
             ShipmentAndOrderSeeder::class,
+            SystemUserSeeder::class, // Dodany seeder użytkowników systemowych
         ]);
     }
 }

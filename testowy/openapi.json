@@ -1,0 +1,264 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Courier Broker API",
+        "version": "1.0.0",
+        "description": "API do obsługi przesyłek, zamówień, faktur oraz webhooków (wewnętrznych i zewnętrznych)."
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080/api"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "basicAuth": {
+                "type": "http",
+                "scheme": "basic"
+            }
+        },
+        "schemas": {
+            "WebhookInternal": {
+                "type": "object",
+                "properties": {
+                    "event_type": {
+                        "type": "string",
+                        "example": "order_synced"
+                    },
+                    "payload": {
+                        "type": "object",
+                        "example": {
+                            "order_id": 1234,
+                            "amount": 55.99
+                        }
+                    }
+                },
+                "required": [
+                    "event_type",
+                    "payload"
+                ]
+            },
+            "WebhookCarrier": {
+                "type": "object",
+                "properties": {
+                    "tracking_number": {
+                        "type": "string",
+                        "example": "1234567890"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "delivered"
+                    }
+                },
+                "required": [
+                    "tracking_number",
+                    "status"
+                ]
+            }
+        }
+    },
+    "security": [],
+    "paths": {
+        "/ping": {
+            "get": {
+                "summary": "Ping test",
+                "responses": {
+                    "200": {
+                        "description": "pong",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "pong": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/webhook/internal": {
+            "post": {
+                "summary": "Webhook od systemów wewnętrznych",
+                "security": [
+                    {
+                        "basicAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebhookInternal"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Przyjęto",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "success": true,
+                                    "message": "Webhook (internal) received and dispatched"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Brak autoryzacji"
+                    }
+                }
+            }
+        },
+        "/webhook/carrier/{carrier}": {
+            "post": {
+                "summary": "Webhook od kurierów",
+                "parameters": [
+                    {
+                        "name": "carrier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "inpost"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebhookCarrier"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Przyjęto",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "success": true,
+                                    "message": "Webhook from carrier received"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/shipments": {
+            "get": {
+                "summary": "Lista przesyłek",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Utwórz przesyłkę",
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/shipments/{id}/cancel": {
+            "patch": {
+                "summary": "Anuluj przesyłkę",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Anulowano",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "message": "Shipment cancelled"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/shipments/{id}/label": {
+            "get": {
+                "summary": "Pobierz/generuj etykietę PDF",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF",
+                        "content": {
+                            "application/pdf": {}
+                        }
+                    }
+                }
+            }
+        },
+        "/shipments/export": {
+            "get": {
+                "summary": "Eksport przesyłek do CSV",
+                "responses": {
+                    "200": {
+                        "description": "CSV",
+                        "content": {
+                            "text/csv": {}
+                        }
+                    }
+                }
+            }
+        },
+        "/shipments/import": {
+            "post": {
+                "summary": "Import przesyłek z CSV",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Zaimportowano",
+                        "content": {
+                            "application/json": {}
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
