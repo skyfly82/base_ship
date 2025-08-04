@@ -16,20 +16,24 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Dashboard, faktury
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
-    Route::get('/invoices/{id}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('/invoices/{id}', [InvoiceController::class, 'show'])->where('id', '[0-9]+')->name('invoices.show');
+
+    // Przesyłki
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
-    Route::get('/shipments/{id}', [ShipmentController::class, 'show'])->name('shipments.show');
     Route::get('/shipments/create', [ShipmentController::class, 'create'])->name('shipments.create');
     Route::post('/shipments', [ShipmentController::class, 'store'])->name('shipments.store');
     Route::get('/shipments/payment/{shipment}', [ShipmentController::class, 'payment'])->name('shipments.payment');
     Route::post('/shipments/payment/{shipment}/pay', [ShipmentController::class, 'pay'])->name('shipments.pay');
-    Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
     Route::get('/shipments/{shipment}/label', [ShipmentController::class, 'label'])->name('shipments.label');
+    Route::get('/shipments/{id}', [ShipmentController::class, 'show'])->where('id', '[0-9]+')->name('shipments.show');
 });
 
 // ========================================
