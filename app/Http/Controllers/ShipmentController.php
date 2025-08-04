@@ -116,9 +116,6 @@ class ShipmentController extends Controller
                 'details'         => json_encode(['inpost' => $result] + $details),
             ]);
 
-            // (opcjonalnie) Możesz dodać Invoice – prosty przykład
-            // \App\Models\Invoice::create([...]);
-
         } catch (\Throwable $e) {
             return redirect()->route('shipments.index')->with('error', 'Błąd nadawania: ' . $e->getMessage());
         }
