@@ -7,6 +7,12 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ShipmentController;
 use App\Services\InPostService;
 
+/*dd([
+    'Wartość z env' => env('INPOST_ORGANIZATION_ID'),
+    'Wartość z config' => config('services.inpost.organization_id')
+]);
+*/
+
 Route::get('/', function () {
     return view('welcome');
 });

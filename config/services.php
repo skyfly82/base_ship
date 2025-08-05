@@ -15,7 +15,9 @@ return [
     */
     'inpost' => [
         'api_url' => env('INPOST_API_URL'),
-        'token' => env('INPOST_API_TOKEN'),
+        'token_url' => env('INPOST_TOKEN_URL'),
+        'token' => env('INPOST_TOKEN'),
+        'organization_id' => env('INPOST_ORGANIZATION_ID'),
     ],
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
