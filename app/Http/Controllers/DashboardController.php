@@ -17,6 +17,7 @@ class DashboardController extends Controller
         $orders = Order::where('customer_id', $customer->id)->latest()->limit(5)->get();
         $invoices = Invoice::where('customer_id', $customer->id)->latest()->limit(5)->get();
 
-        return view('dashboard', compact('customer', 'shipments', 'orders', 'invoices'));
+        // Zmiana jest tutaj: \compact
+        return view('dashboard', \compact('customer', 'shipments', 'orders', 'invoices'));
     }
 }

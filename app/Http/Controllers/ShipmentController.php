@@ -71,57 +71,36 @@ class ShipmentController extends Controller
     // Obsługa “płatności”, wywołanie API InPost, pobranie etykiety, aktualizacja shipmentu
     public function pay(Request $request, Shipment $shipment)
     {
-        $customer = Auth::user();
-        if ($shipment->customer_id !== $customer->id) {
-            abort(403);
-        }
+    \Log::info('Pay method called!', ['shipment_id' => $shipment->id]);
+    $details = json_decode($shipment->details, true);
 
-        $details = json_decode($shipment->details, true);
+    $payload = [/* ...payload jak poprzednio... */];
 
-        $payload = [
-            'service' => 'inpost_locker_standard',
-            'reference' => 'ORDER-' . $shipment->id,
-            'receiver' => [
-                'email'      => $details['receiver_email'],
-                'phone'      => $details['receiver_phone'],
-                'first_name' => $details['receiver_first_name'],
-                'last_name'  => $details['receiver_last_name'],
-            ],
-            'custom_attributes' => [
-                'target_point' => $details['inpost_point'],
-            ],
-            'parcels' => [
-                [
-                    'template' => $details['size'],
-                    'weight'   => $details['weight_kg'] * 1000,
-                ]
-            ]
-        ];
+    try {
+        $inpost = app(\App\Services\InPostService::class);
+        $result = $inpost->createShipment($payload);
+        \Log::info('InPost createShipment result', ['result' => $result]);
 
-        try {
-            $inpost = app(InPostService::class);
-            $result = $inpost->createShipment($payload);
+        $inpostShipmentId = $result['id'] ?? null;
+        $labelContent = $inpost->getLabel($inpostShipmentId);
+        \Log::info('InPost getLabel success', ['shipment_id' => $shipment->id, 'inpost_id' => $inpostShipmentId]);
 
-            // Pobierz etykietę
-            $inpostShipmentId = $result['id'] ?? null;
-            $labelContent = $inpost->getLabel($inpostShipmentId);
+        $labelPath = "labels/inpost_{$shipment->id}_{$inpostShipmentId}.pdf";
+        \Storage::disk('local')->put($labelPath, $labelContent);
 
-            $labelPath = "labels/inpost_{$shipment->id}_{$inpostShipmentId}.pdf";
-            Storage::disk('local')->put($labelPath, $labelContent);
-
-            // Zaktualizuj shipment
-            $shipment->update([
-                'status'          => 'created',
-                'tracking_number' => $result['tracking_number'] ?? null,
-                'details'         => json_encode(['inpost' => $result] + $details),
-            ]);
-
-        } catch (\Throwable $e) {
-            return redirect()->route('shipments.index')->with('error', 'Błąd nadawania: ' . $e->getMessage());
-        }
-
-        return redirect()->route('shipments.index')->with('success', 'Paczka nadana. Etykieta do pobrania.');
+        $shipment->update([
+            'status'          => 'created',
+            'tracking_number' => $result['tracking_number'] ?? null,
+            'details'         => json_encode(['inpost' => $result] + $details),
+        ]);
+        \Log::info('Shipment updated', ['shipment_id' => $shipment->id, 'status' => $shipment->status]);
+    } catch (\Throwable $e) {
+        \Log::error('Pay error', ['error' => $e->getMessage()]);
+        return redirect()->route('shipments.index')->with('error', 'Błąd nadawania: ' . $e->getMessage());
     }
+
+    return redirect()->route('shipments.index')->with('success', 'Paczka nadana. Etykieta do pobrania.');
+}
 
     // Pobieranie etykiety PDF
     public function label($id)

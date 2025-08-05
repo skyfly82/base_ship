@@ -91,6 +91,8 @@ namespace App\Models{
  * @property string|null $details
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Customer $customer
+ * @property-read \App\Models\Settlement|null $settlement
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice query()
@@ -195,6 +197,7 @@ namespace App\Models{
  * @property string|null $weekly_billing_day
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Customer $customer
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Settlement newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Settlement newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Settlement query()
